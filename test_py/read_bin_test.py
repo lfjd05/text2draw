@@ -14,13 +14,16 @@
 
 import struct
 from struct import unpack
-from PIL import Image
+from scipy import interpolate
+from googletrans import Translator
+import pylab as pl
+import os
 
 
 def unpack_drawing(file_handle):
     key_id, = unpack('Q', file_handle.read(8))
     countrycode, = unpack('2s', file_handle.read(2))
-    recognized, = unpack('b', file_handle.read(1))    # 是否被识别
+    recognized, = unpack('b', file_handle.read(1))  # 是否被识别
     timestamp, = unpack('I', file_handle.read(4))
     n_strokes, = unpack('H', file_handle.read(2))
     image = []
@@ -49,7 +52,38 @@ def unpack_drawings(filename):
                 break
 
 
-for drawing in unpack_drawings('full_binary_aircraft carrier.bin'):
-    # do something with the drawing
-    image_array = drawing['image']
-    print(drawing['image'])
+def draw_plot(draw_pack, class_name_para):
+    id = draw_pack['key_id']
+    image_array = draw_pack['image']
+
+    if not os.path.exists('png_data/{}'.format(class_name_para)):
+        os.makedirs('png_data/{}'.format(class_name_para))
+
+    if draw_pack["recognized"]:  # 识别对了的才是正确的图像
+        for a_pen in image_array:  # 一笔
+            x = a_pen[0]
+            y = a_pen[1]
+            # 插值
+            f = interpolate.interp1d(x, y, kind='slinear')
+            pl.plot(x, y, 'k')
+        ax = pl.gca()  # 所有笔画画在一起
+        ax.xaxis.set_ticks_position('top')
+        ax.invert_yaxis()
+        pl.axis('off')
+        pl.savefig("png_data/%s/%s.png" % (class_name_para, id))
+        pl.close()
+
+
+translator = Translator(service_urls=['translate.google.com.hk', 'translate.google.co.kr'])
+for root, _, file_names in os.walk('D:/pycharm_programme/画画数据'):
+    for file_name in file_names:  # 一个种类的.bin文件
+        i = 0
+        class_name = file_name.split('_')[-1].replace('.bin', '')
+        class_name_translation = translator.translate(class_name, src='en', dest='zh-CN').text
+        for drawing in unpack_drawings(os.path.join(root, file_name)):
+            # do something with the drawing
+            draw_plot(drawing, class_name_translation)
+            if i == 1:  # 每个种类画500个图
+                break
+            else:
+                i += 1
