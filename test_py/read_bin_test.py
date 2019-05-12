@@ -75,7 +75,7 @@ def draw_plot(draw_pack, class_name_para):
 
 
 translator = Translator(service_urls=['translate.google.com.hk', 'translate.google.co.kr'])
-for root, _, file_names in os.walk('D:/pycharm_programme/画画数据'):
+for root, _, file_names in os.walk('D:/python Programme/画画'):
     for file_name in file_names:  # 一个种类的.bin文件
         i = 0
         class_name = file_name.split('_')[-1].replace('.bin', '')
@@ -83,7 +83,7 @@ for root, _, file_names in os.walk('D:/pycharm_programme/画画数据'):
         for drawing in unpack_drawings(os.path.join(root, file_name)):
             # do something with the drawing
             draw_plot(drawing, class_name_translation)
-            if i == 1:  # 每个种类画500个图
+            if i == 500:  # 每个种类画500个图
                 break
             else:
                 i += 1
