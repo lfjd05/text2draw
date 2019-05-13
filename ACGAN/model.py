@@ -6,8 +6,8 @@ from keras.layers.convolutional import UpSampling2D, Conv2D
 from keras.models import Sequential, Model
 from keras.optimizers import Adam
 
+from ACGAN.read_dataset import create_record
 import matplotlib.pyplot as plt
-
 import numpy as np
 
 
@@ -22,7 +22,7 @@ class ACGAN():
         self.img_cols = 28
         self.channels = 1
         self.img_shape = (self.img_rows, self.img_cols, self.channels)
-        self.num_classes = 10
+        self.num_classes = 20
         self.latent_dim = 100
 
         optimizer = Adam(0.0002, 0.5)
@@ -61,7 +61,7 @@ class ACGAN():
         model = Sequential()
 
         model.add(Dense(128 * 7 * 7, activation="relu", input_dim=self.latent_dim))
-        model.add(Reshape((7, 7, 128)))
+        model.add(Reshape((7, 7, 128)))            # 噪声转换为图像
         model.add(BatchNormalization(momentum=0.8))
         model.add(UpSampling2D())
         model.add(Conv2D(128, kernel_size=3, padding="same"))
@@ -122,12 +122,14 @@ class ACGAN():
     def train(self, epochs, batch_size=128, sample_interval=50):
 
         # Load the dataset
-        (X_train, y_train), (_, _) = mnist.load_data()
+        (X_train, y_train), (_, _) = mnist.load_data()    # 读取数据集
+        # _, X_train, y_train = create_record('../../png_data')
 
         # Configure inputs
         X_train = (X_train.astype(np.float32) - 127.5) / 127.5
         X_train = np.expand_dims(X_train, axis=3)    # 扩展维度
         y_train = y_train.reshape(-1, 1)
+        print('输入输出大小', X_train.shape, y_train.shape)     # (60000, 28, 28, 1) (60000, 1)
 
         # Adversarial ground truths
         valid = np.ones((batch_size, 1))
@@ -141,7 +143,7 @@ class ACGAN():
 
             # Select a random batch of images
             idx = np.random.randint(0, X_train.shape[0], batch_size)
-            imgs = X_train[idx]
+            imgs = X_train[idx]      # 随机选择的图像
 
             # Sample noise as generator input
             noise = np.random.normal(0, 1, (batch_size, 100))
